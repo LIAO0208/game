@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>接羽球遊戲 v2</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+      background: #f0f8ff;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(to bottom, #e0ffff, #fff);
+    }
+
+    #player {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 80px;
+      background: url('https://i.imgur.com/NT6aFEu.png') no-repeat center/contain;
+    }
+
+    .shuttle {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: url('https://i.imgur.com/RGkX0FE.png') no-repeat center/contain;
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 1.5rem;
+      color: #333;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 8px 12px;
+      border-radius: 10px;
+    }
+
+    #message {
+      position: absolute;
+      top: 40%;
+      width: 100%;
+      text-align: center;
+      font-size: 2.5rem;
+      color: #333;
+      display: none;
+    }
+
+    #restartBtn {
+      display: none;
+      position: absolute;
+      top: 60%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      font-size: 1.2rem;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #touch-controls {
+      display: none;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    #left, #right {
+      position: absolute;
+      width: 50%;
+      height: 100%;
+      top: 0;
+    }
+
+    #left {
+      left: 0;
+    }
+
+    #right {
+      right: 0;
+    }
+
+    @media (max-width: 768px) {
+      #touch-controls {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="player"></div>
+    <div id="score">接到：0 / 10</div>
+    <div id="message">你真棒！🎉</div>
+    <button id="restartBtn">再玩一次</button>
+    <div id="touch-controls">
+      <div id="left"></div>
+      <div id="right"></div>
+    </div>
+  </div>
+
+  <script>
+    const player = document.getElementById("player");
+    const game = document.getElementById("game");
+    const scoreDisplay = document.getElementById("score");
+    const message = document.getElementById("message");
+    const restartBtn = document.getElementById("restartBtn");
+    const leftBtn = document.getElementById("left");
+    const rightBtn = document.getElementById("right");
+
+    let playerX;
+    let caught;
+    let isGameOver = false;
+    let shuttleInterval;
+
+    function initGame() {
+      playerX = window.innerWidth / 2 - 40;
+      player.style.left = playerX + "px";
+      caught = 0;
+      isGameOver = false;
+      message.style.display = "none";
+      restartBtn.style.display = "none";
+      scoreDisplay.textContent = `接到：${caught} / 10`;
+
+      // 清除現有羽球
+      document.querySelectorAll('.shuttle').forEach(el => el.remove());
+
+      // 重新啟動掉落
+      shuttleInterval = setInterval(() => {
+        if (!isGameOver) dropShuttle();
+      }, 1000);
+    }
+
+    function dropShuttle() {
+      const shuttle = document.createElement("div");
+      shuttle.classList.add("shuttle");
+      let x = Math.random() * (window.innerWidth - 40);
+      let y = -40;
+      shuttle.style.left = x + "px";
+      shuttle.style.top = y + "px";
+      game.appendChild(shuttle);
+
+      let fall = setInterval(() => {
+        y += 5;
+        shuttle.style.top = y + "px";
+
+        const shuttleRect = shuttle.getBoundingClientRect();
+        const playerRect = player.getBoundingClientRect();
+
+        if (
+          shuttleRect.bottom >= playerRect.top &&
+          shuttleRect.left < playerRect.right &&
+          shuttleRect.right > playerRect.left
+        ) {
+          game.removeChild(shuttle);
+          clearInterval(fall);
+          caught++;
+          scoreDisplay.textContent = `接到：${caught} / 10`;
+          if (caught >= 10) endGame();
+        }
+
+        if (y > window.innerHeight) {
+          game.removeChild(shuttle);
+          clearInterval(fall);
+        }
+      }, 20);
+    }
+
+    function endGame() {
+      isGameOver = true;
+      clearInterval(shuttleInterval);
+      message.style.display = "block";
+      restartBtn.style.display = "inline-block";
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") {
+        movePlayer(-20);
+      } else if (e.key === "ArrowRight") {
+        movePlayer(20);
+      }
+    });
+
+    function movePlayer(delta) {
+      playerX = Math.max(0, Math.min(window.innerWidth - 80, playerX + delta));
+      player.style.left = playerX + "px";
+    }
+
+    // 手機左右控制
+    let leftInterval, rightInterval;
+
+    leftBtn.addEventListener("touchstart", () => {
+      leftInterval = setInterval(() => movePlayer(-10), 50);
+    });
+    leftBtn.addEventListener("touchend", () => clearInterval(leftInterval));
+
+    rightBtn.addEventListener("touchstart", () => {
+      rightInterval = setInterval(() => movePlayer(10), 50);
+    });
+    rightBtn.addEventListener("touchend", () => clearInterval(rightInterval));
+
+    // 再玩一次按鈕
+    restartBtn.addEventListener("click", initGame);
+
+    // 初次進入遊戲
+    initGame();
+  </script>
+</body>
+</html>
